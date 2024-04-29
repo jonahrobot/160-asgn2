@@ -80,19 +80,35 @@ function setupGLSL(){
 
 // Globals for HTML UI
 let g_yellowAngle = 0;
-let g_yellowAnimation = false;
+let g_animating = false;
 
-let g_globalAngle = 60;
+let g_globalAngle = 0;
+let g_globalAngle_y = 0;
 let g_pinkSlide = 0;
+
+let g_LWING_angle = 25;
+let g_RWING_angle = 25;
+let g_RWING2_angle = -45;
+let g_RWING3_angle = -45;
+let g_head_angle = 0;
+let g_body_angle = 0;
+
+let toggleSpeed = 1;
 
 function setupHTMLUIActions(){
 
     document.getElementById('angleSlide').addEventListener('mousemove', function(){g_globalAngle = this.value; renderAllShapes();});
-    document.getElementById('yellowSlide').addEventListener('mousemove', function(){g_yellowAngle = this.value; renderAllShapes();});
-    document.getElementById('pinkSlide').addEventListener('mousemove', function(){g_pinkSlide = this.value; renderAllShapes();});
 
-    document.getElementById('animationYellowOnButton').onclick = function(){ g_yellowAnimation = true; }
-    document.getElementById('animationYellowOffButton').onclick = function(){ g_yellowAnimation = false; }
+    // Rotate individual parts
+    document.getElementById('g_LWING_angle').addEventListener('mousemove', function(){g_LWING_angle = this.value; renderAllShapes();});
+    document.getElementById('g_RWING_angle').addEventListener('mousemove', function(){g_RWING_angle = this.value; renderAllShapes();});
+    document.getElementById('g_head_angle').addEventListener('mousemove', function(){g_head_angle = this.value; renderAllShapes();});
+    document.getElementById('g_body_angle').addEventListener('mousemove', function(){g_body_angle = this.value; renderAllShapes();});
+    document.getElementById('g_RWING2_angle').addEventListener('mousemove', function(){g_RWING2_angle = this.value; renderAllShapes();});
+    document.getElementById('g_RWING3_angle').addEventListener('mousemove', function(){g_RWING3_angle = this.value; renderAllShapes();});
+
+    document.getElementById('animationYellowOnButton').onclick = function(){ g_animating = true; }
+    document.getElementById('animationYellowOffButton').onclick = function(){ g_animating = false; }
     
 }
 
@@ -104,13 +120,15 @@ function main() {
   // Setup actions for HTML elements
   setupHTMLUIActions();
 
-    //   // Register function (event handler) to be called on a mouse press
-    //   canvas.onmousedown = click;
-    //   canvas.onmousemove = function(ev){
-    //     if(ev.buttons == 1){
-    //         click(ev);
-    //     }
-    //   }
+      // Register function (event handler) to be called on a mouse press
+      canvas.onmousedown = function(ev){
+        if(ev.buttons == 1 && ev.shiftKey){
+            toggleSpeed += 1
+            if(toggleSpeed > 10){
+                toggleSpeed = 1;
+            }
+        }
+      }
 
   // Specify the color for clearing <canvas>
   gl.clearColor(0.0, 0.0, 0.0, 1.0);
@@ -126,7 +144,7 @@ var g_seconds = performance.now()/1000.0 - g_startTime;
 function tick(){
 
     g_seconds = performance.now()/1000.0 - g_startTime;
-    console.log(g_seconds);
+    //console.log(g_seconds);
 
     updateAnimationAngles();
 
@@ -135,14 +153,24 @@ function tick(){
     requestAnimationFrame(tick);
 }
 
-// function click(ev) {
-//     // Extract the event click and return it in WebGL coordinates
-//     let [x,y] = convertCordEventToGL(ev);
-// }
+function click(ev) {
+    // Extract the event click and return it in WebGL coordinates
+    let [x,y] = convertCordEventToGL(ev);
+}
 
 function updateAnimationAngles(){
-    if(g_yellowAnimation){
-        g_yellowAngle = (45 * Math.sin(g_seconds));
+    if(g_animating){
+
+
+
+
+            g_LWING_angle = (25 * Math.sin(g_seconds*10 * toggleSpeed));
+            g_RWING_angle  = (25 * Math.sin(g_seconds*10 * toggleSpeed));
+            g_head_angle  = (5 * Math.cos(g_seconds) * 3 * toggleSpeed); 
+            g_body_angle = (15 * Math.sin(g_seconds* 3 * toggleSpeed));
+            g_RWING2_angle = (-45 * Math.abs(Math.sin(g_seconds* 3 * toggleSpeed)));
+            g_RWING3_angle =  (-45 * Math.abs(Math.sin(g_seconds* 3 * toggleSpeed)));
+        
     }
 }
 
@@ -157,40 +185,138 @@ function renderAllShapes(){
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
     gl.clear(gl.COLOR_BUFFER_BIT);
 
-    // Draw cube body
+    // Chicken
     var body = new Cube();
-    body.color = [1,0,0,1];
-    body.matrix.setTranslate(-0.25,-0.75,0.0); // Translate second
-    body.matrix.rotate(-5,1,0,0);
-    body.matrix.scale(0.5,0.3,0.5);
+    body.color = [1,1,1,1];
+    body.matrix.rotate(g_body_angle,0,0,1);
+    var bodyParent = new Matrix4(body.matrix);
+    body.matrix.scale(0.5,0.4,0.5);
+    body.matrix.translate(-0.5,-0.5,-0.5);
     body.render();
 
+    var RWing = new Cube();
+    RWing.color = [0.8,0.8,0.8,1];
+    RWing.matrix = new Matrix4(bodyParent);
+    RWing.matrix.rotate(g_RWING_angle,0,0,1);
+    var wingParentA = new Matrix4(RWing.matrix);
+    RWing.matrix.translate(0,0,-0.2,0);
+    RWing.matrix.scale(0.5,0.1,0.4);
+
+    RWing.render();
+
+    var RWing2 = new Cube();
+    RWing2.color = [0.8,0.8,0.8,1];
+    RWing2.matrix = new Matrix4(wingParentA);
+    RWing2.matrix.translate(0.4,0.1,-0.1,0);
+    RWing2.matrix.rotate(g_RWING2_angle,0,0,1);
+    var wingParentParentD = new Matrix4(RWing2.matrix);
+    RWing2.matrix.scale(0.3,0.1,0.4);
+    RWing2.render();
+
+    var RWing3 = new Cube();
+    RWing3.color = [0.8,0.8,0.8,1];
+    RWing3.matrix = new Matrix4(wingParentParentD);
+    RWing3.matrix.translate(0.2,0.05,-0.1,0);
+    RWing3.matrix.rotate(g_RWING3_angle,0,0,1);
+    RWing3.matrix.scale(.2,0.1,0.4);
+    RWing3.render();
+
+    var LWing = new Cube();
+    LWing.color = [0.8,0.8,0.8,1];
+    LWing.matrix = new Matrix4(bodyParent);
+    LWing.matrix.translate(0,0,-0.2,0);
+    LWing.matrix.rotate(-g_LWING_angle,0,0,1);
+    var wingParentB = new Matrix4(LWing.matrix);
+    LWing.matrix.scale(-0.5,0.1,0.4);
+    LWing.render();
+
+    var LWing2 = new Cube();
+    LWing2.color = [0.8,0.8,0.8,1];
+    LWing2.matrix = new Matrix4(wingParentB);
+    LWing2.matrix.translate(-0.4,0.1,-0.1,0);
+    LWing2.matrix.rotate(-g_RWING2_angle,0,0,1);
+    var wingParentParentC = new Matrix4(LWing2.matrix);
+    LWing2.matrix.scale(0-.3,0.1,0.4);
+    LWing2.render();
+
+    var LWing3 = new Cube();
+    LWing3.color = [0.8,0.8,0.8,1];
+    LWing3.matrix = new Matrix4(wingParentParentC);
+    LWing3.matrix.translate(-0.2,0.05,-0.1,0);
+    LWing3.matrix.rotate(-g_RWING3_angle,0,0,1);
+    LWing3.matrix.scale(0-.2,0.1,0.4);
+    LWing3.render();
+
+    var Head = new Cube();
+    Head.color = [1,1,1,1];
+    Head.matrix = bodyParent;
+    Head.matrix.rotate(g_head_angle,0,0,1);
+    var headParent = new Matrix4(Head.matrix);
+    Head.matrix.scale(0.3,0.33,0.3);
+    Head.matrix.translate(-0.5,0.4,-1.2);
+    Head.render();
+
+    var nose = new Cube();
+    nose.color = [1,1,0,1];
+    nose.matrix = new Matrix4(headParent);
+    nose.matrix.scale(0.2,0.1,0.1);
+    nose.matrix.translate(-0.5,2.5,-4.3);
+    nose.render();
+
+    var eye1 = new Cube();
+    eye1.color = [0,0,0,1];
+    eye1.matrix = new Matrix4(headParent);
+    eye1.matrix.scale(0.05,0.05,0.05);
+    eye1.matrix.translate(-2,7,-7.5);
+    eye1.render();
+
+    var eye2 = new Cube();
+    eye2.color = [0,0,0,1];
+    eye2.matrix = new Matrix4(headParent);
+    eye2.matrix.scale(0.05,0.05,0.05);
+    eye2.matrix.translate(1,7,-7.5);
+    eye2.render();
+
+    var redFluff = new Cube();
+    redFluff.color = [1,0,0,1];
+    redFluff.matrix = new Matrix4(headParent);
+    redFluff.matrix.scale(0.1,0.1,0.1);
+    redFluff.matrix.translate(-0.5,1.5,-4.2);
+    redFluff.render();
+
+
+
+
+    // // Draw cube body
+    // var body = new Cube();
+    // body.color = [1,0,0,1];
+    // body.matrix.setTranslate(-0.25,-0.75,0.0); // Translate second
+    // body.matrix.rotate(-5,1,0,0);
+    // body.matrix.scale(0.5,0.3,0.5);
+    // body.render();
+
     // Draw left arm
-    var arm = new Cube();
-    arm.color = [1,1,0,1];
-    arm.matrix.setTranslate(0, -0.5, 0); // Translate second
-    arm.matrix.rotate(-5,1,0,0);
+    // var arm = new Cube();
+    // arm.color = [1,1,0,1];
+    // arm.matrix.setTranslate(0, -0.5, 0); // Translate second
+    // arm.matrix.rotate(-5,1,0,0);
 
-    arm.matrix.rotate(-g_yellowAngle,0,0,1);
-    // if(g_yellowAnimation){
-    //     arm.matrix.rotate(45 * Math.sin(g_seconds), 0, 0, 1);
-    // }else{
-    //     arm.matrix.rotate(-g_yellowAngle,0,0,1);
-    // }
+    // arm.matrix.rotate(-g_yellowAngle,0,0,1);
 
-    var yellowMatrix = new Matrix4(arm.matrix);
-    arm.matrix.scale(0.25,0.7,0.5);
-    arm.matrix.translate(-0.5,0,0);
-    arm.render();
+    // var yellowMatrix = new Matrix4(arm.matrix);
 
-    var box = new Cube();
-    box.color = [1,0,1,1];
-    box.matrix = yellowMatrix;
-    box.matrix.translate(0, 0.65,0); // Translate second
-    box.matrix.rotate(g_pinkSlide,0,0,1);
-    box.matrix.scale(0.3,0.3,0.3);
-    box.matrix.translate(-0.5,0,-0.001,0);
-    box.render();
+    // arm.matrix.scale(0.25,0.7,0.5);
+    // arm.matrix.translate(-0.5,0,0);
+    // arm.render();
+
+    // var box = new Cube();
+    // box.color = [1,0,1,1];
+    // box.matrix = yellowMatrix;
+    // box.matrix.translate(0, 0.65,0); // Translate second
+    // box.matrix.rotate(g_pinkSlide,0,0,1);
+    // box.matrix.scale(0.3,0.3,0.3);
+    // box.matrix.translate(-0.5,0,-0.001,0);
+    // box.render();
 
     var duration = performance.now() - startTime;
     sendTextToHTML(" ms: " + Math.floor(duration) + " fps: " + Math.floor(10000/ duration)/10, "numdot");
