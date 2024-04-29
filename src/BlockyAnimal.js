@@ -80,6 +80,8 @@ function setupGLSL(){
 
 // Globals for HTML UI
 let g_yellowAngle = 0;
+let g_yellowAnimation = false;
+
 let g_globalAngle = 60;
 let g_pinkSlide = 0;
 
@@ -88,6 +90,9 @@ function setupHTMLUIActions(){
     document.getElementById('angleSlide').addEventListener('mousemove', function(){g_globalAngle = this.value; renderAllShapes();});
     document.getElementById('yellowSlide').addEventListener('mousemove', function(){g_yellowAngle = this.value; renderAllShapes();});
     document.getElementById('pinkSlide').addEventListener('mousemove', function(){g_pinkSlide = this.value; renderAllShapes();});
+
+    document.getElementById('animationYellowOnButton').onclick = function(){ g_yellowAnimation = true; }
+    document.getElementById('animationYellowOffButton').onclick = function(){ g_yellowAnimation = false; }
     
 }
 
@@ -111,6 +116,23 @@ function main() {
   gl.clearColor(0.0, 0.0, 0.0, 1.0);
 
   renderAllShapes();
+
+  requestAnimationFrame(tick);
+}
+
+var g_startTime = performance.now()/1000.0;
+var g_seconds = performance.now()/1000.0 - g_startTime;
+
+function tick(){
+
+    g_seconds = performance.now()/1000.0 - g_startTime;
+    console.log(g_seconds);
+
+    updateAnimationAngles();
+
+    renderAllShapes();
+
+    requestAnimationFrame(tick);
 }
 
 // function click(ev) {
@@ -118,7 +140,15 @@ function main() {
 //     let [x,y] = convertCordEventToGL(ev);
 // }
 
+function updateAnimationAngles(){
+    if(g_yellowAnimation){
+        g_yellowAngle = (45 * Math.sin(g_seconds));
+    }
+}
+
 function renderAllShapes(){
+
+    var startTime = performance.now();
 
     var globalRotMat = new Matrix4().rotate(g_globalAngle,0,1,0);
     gl.uniformMatrix4fv(u_GlobalRotateMatrix,false,globalRotMat.elements);
@@ -140,7 +170,14 @@ function renderAllShapes(){
     arm.color = [1,1,0,1];
     arm.matrix.setTranslate(0, -0.5, 0); // Translate second
     arm.matrix.rotate(-5,1,0,0);
+
     arm.matrix.rotate(-g_yellowAngle,0,0,1);
+    // if(g_yellowAnimation){
+    //     arm.matrix.rotate(45 * Math.sin(g_seconds), 0, 0, 1);
+    // }else{
+    //     arm.matrix.rotate(-g_yellowAngle,0,0,1);
+    // }
+
     var yellowMatrix = new Matrix4(arm.matrix);
     arm.matrix.scale(0.25,0.7,0.5);
     arm.matrix.translate(-0.5,0,0);
@@ -154,6 +191,9 @@ function renderAllShapes(){
     box.matrix.scale(0.3,0.3,0.3);
     box.matrix.translate(-0.5,0,-0.001,0);
     box.render();
+
+    var duration = performance.now() - startTime;
+    sendTextToHTML(" ms: " + Math.floor(duration) + " fps: " + Math.floor(10000/ duration)/10, "numdot");
 }
 
 function sendTextToHTML(text,htmlID){
